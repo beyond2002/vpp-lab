@@ -17,21 +17,28 @@
 # limitations under the License.
 
 echo Bringing up containers...
-docker-compose up -d                                # Bring up topology
+# docker compose up -d                                # Bring up topology
+docker compose up -d node1 node2 node3
 
 echo Waiting for Ansible to complete...
-docker-compose logs -f ansible
+# docker compose logs -f ansible
+docker compose run ansible playbook-1-interfaces.yaml
+docker compose run ansible playbook-2-sid-definition.yaml
+docker compose run ansible playbook-3-sid-connectivity.yaml
+docker compose run ansible playbook-4-srv6-policies.yaml
 
 echo Configuring Ubuntu networking...
-docker-compose exec node1 ip addr replace fd10::1/64 dev vpp      # Set Linux-side IP if not done by VPP
-docker-compose exec node1 ip route add fd30::/64 via fd10::10     # Route to Container 3 via own VPP
-docker-compose exec node3 ip addr replace fd30::1/64 dev vpp      # Set Linux-side IP if not done by VPP
-docker-compose exec node3 ip route add fd10::/64 via fd30::30     # Route to Container 3 via own VPP
+docker compose exec node1 ip addr replace fd10::1/64 dev vpp      # Set Linux-side IP if not done by VPP
+docker compose exec node1 ip route add fd30::/64 via fd10::10     # Route to Container 3 via own VPP
+docker compose exec node3 ip addr replace fd30::1/64 dev vpp      # Set Linux-side IP if not done by VPP
+docker compose exec node3 ip route add fd10::/64 via fd30::30     # Route to Container 3 via own VPP
 
 echo Running pings between Node 1 and Node 3 over SRv6 tunnel
+docker compose exec node1 vppctl ping fd10::1
+docker compose exec node3 vppctl ping fd30::1
 for i in `seq 1 10`; do
-        docker-compose exec node1 ping6 -c 1 fd30::1
-        docker-compose exec node3 ping6 -c 1 fd10::1
+        docker compose exec node1 ping6 -c 1 fd30::1
+        docker compose exec node3 ping6 -c 1 fd10::1
 done
 
 
@@ -39,10 +46,10 @@ cat <<EOF
 
 
 All done. You can do the following to explore this setup further:
-    Open a shell to a Ubuntu container:         docker-compose exec node1 bash
-    Open the VPP debug CLI of a node:           docker-compose exec node1 vppctl
-    Dump the etcd datastore:                    docker-compose exec etcd etcdctl get "" --prefix
+    Open a shell to a Ubuntu container:         docker compose exec node1 bash
+    Open the VPP debug CLI of a node:           docker compose exec node1 vppctl
+    Dump the etcd datastore:                    docker compose exec etcd etcdctl get "" --prefix
     Access ligato HTTP API with a browser:      http://localhost:9191
     Access the telemetry data explorer:         http://localhost:8888/sources/0/chronograf/data-explorer
-    Teardown this demo:                         docker-compose down
+    Teardown this demo:                         docker compose down
 EOF

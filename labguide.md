@@ -23,7 +23,7 @@ You can follow this guide either using the Honeycomb (hc2vpp) or the Ligato lab,
 
 If you have previously started any of the two labs, please change into this labs directory and run
 ```
-docker-compose down
+docker compose down
 ```
 to teardown and reset the environment.
 
@@ -38,12 +38,12 @@ VPP however also has a CLI for debugging purposes which can be (ab)used to do  b
 First we will bring up the basic VPP topology with the 3 nodes.
 
 ```
-docker-compose up -d node1 node2 node3
+docker compose up -d node1 node2 node3
 ```
 
 ### 1.1. Access the VPP CLI of node 1
 ```
-docker-compose exec node1 vppctl
+docker compose exec node1 vppctl
 ```
 
 Note: To leave the VPP CLI use "quit".
@@ -101,7 +101,7 @@ show ip6 neighbors
 You can also verify the Ubuntu-side of things by opening a terminal to the shell of the Ubuntu node 1.
 
 ```
-docker-compose exec node1 bash
+docker compose exec node1 bash
 ```
 
 Afterwards you can use the usual Linux commands to list interfaces or initiate a ping in the reverse direction.
@@ -123,7 +123,7 @@ Honeycomb exposes NETCONF and RESTCONF interfaces northbound with configuration 
 Bring up the 3 VPP nodes and the graphical NETCONF explorer.
 
 ```
-docker-compose up -d node1 node2 node3 anx
+docker compose up -d node1 node2 node3 anx
 ```
 
 Note: If you have trouble starting / building the ANX container, make sure the git submodule is cloned correctly:
@@ -201,7 +201,7 @@ In addition to NETCONF, Honeycomb also supports RESTCONF which supports a subset
 which supports JSON as an alternative encoding. You can configure the host-interface for eth0 on node2 with a command like this:
 
 ```
-docker-compose exec node2 curl -k -u admin:admin \
+docker compose exec node2 curl -k -u admin:admin \
     -X POST -H "Content-Type: application/yang.data+json" \
     -d '{"interface": [{
       "name": "host-eth0",
@@ -215,15 +215,15 @@ Again the structure of the configuration message is defined by the underlying YA
 
 You can now query Honeycomb via RESTCONF, to read back the configuration and the new state information.
 ```
-docker-compose exec node2 curl -k -u admin:admin https://localhost:8445/restconf/config/ietf-interfaces:interfaces
-docker-compose exec node2 curl -k -u admin:admin https://localhost:8445/restconf/operational/ietf-interfaces:interfaces-state
+docker compose exec node2 curl -k -u admin:admin https://localhost:8445/restconf/config/ietf-interfaces:interfaces
+docker compose exec node2 curl -k -u admin:admin https://localhost:8445/restconf/operational/ietf-interfaces:interfaces-state
 ```
 
 Of course you could also use NETCONF to read back this information and vice-versa.
 
 You can now use the debug CLI of node2 to check connectivity between the two VPP instances:
 ```
-docker-compose exec node2 vppctl ping fd12::10
+docker compose exec node2 vppctl ping fd12::10
 ```
 
 ## 3 Ligato configuration basics (Ligato lab only)
@@ -239,7 +239,7 @@ etcd is a key/value store, meaning stored elements are associated with a unique 
 Step 1 brought up the three VPP nodes and their dependencies, including etcd. After startup is done you can view the current information stored in etcd using etcdctl:
 
 ```
-docker-compose exec etcd etcdctl get --prefix ""
+docker compose exec etcd etcdctl get --prefix ""
 ```
 
 ### 3.1 Creating a host-interface for VPP communication using etcdctl
@@ -248,9 +248,9 @@ You can now create an interface for communication between containers. We attach 
 We are using etcdctl again to send the configuration. This tool is a client for the etcd server and communicates through the etcd API which is based on the GRPC protocol.
 
 Note: if you are using (Git) bash on Windows prepend the following command with *MSYS_NO_PATHCONV=1* e.g.:
-*MSYS_NO_PATHCONV=1 docker-compose exec ...*
+*MSYS_NO_PATHCONV=1 docker compose exec ...*
 ```
-docker-compose exec etcd etcdctl put \
+docker compose exec etcd etcdctl put \
   '/vnf-agent/node1/vpp/config/v1/interface/host-eth0' \
   '{
       "afpacket": {"host_if_name": "eth0"},
@@ -267,7 +267,7 @@ You can see the configuration consists of a key with a given path that identifie
 
 You can verify the configuration, e.g. by listing the interfaces through the debug CLI
 ```
-docker-compose exec node1 vppctl show interface addr
+docker compose exec node1 vppctl show interface addr
 ```
 
 Just for reference the JSON configuration above is equivalent to the following commands on the debug CLI of VPP:
@@ -281,7 +281,7 @@ set interface ip address host-eth0 fd12::10/64
 In addition to the GRPC API which is used by etcdctl, there is also an HTTP-API which is more web-friendly and uses a JSON-encoding. Use the HTTP-API to attach the second VPP node to the Docker interface:
 
 ```
-docker-compose exec node2 curl -d \
+docker compose exec node2 curl -d \
 '{
 "key": "L3ZuZi1hZ2VudC9ub2RlMi92cHAvY29uZmlnL3YxL2ludGVyZmFjZS9ob3N0LWV0aDA=","value": "ewogICAgICAgICAgICAiYWZwYWNrZXQiOiB7Imhvc3RfaWZfbmFtZSI6ICJldGgwIn0sCiAgICAgICAgICAgICJlbmFibGVkIjogdHJ1ZSwKICAgICAgICAgICAgIm10dSI6IDE1MDAsCiAgICAgICAgICAgICJpcF9hZGRyZXNzZXMiOiBbImZkMTI6OjIwLzY0Il0sCiAgICAgICAgICAgICJuYW1lIjogImhvc3QtZXRoMCIsCiAgICAgICAgICAgICJwaHlzX2FkZHJlc3MiOiAiMDA6MDA6MDA6MDA6MTI6MjAiLAogICAgICAgICAgICAidHlwZSI6IDQKICAgICAgICAgIH0="}' \
 http://etcd:2379/v3beta/kv/put
@@ -304,7 +304,7 @@ openssl base64 -A <<< '{
 
 After adding the configuration to etcd you could verify the configuration using the VPP debug CLI, e.g. by using the ping command.
 ```
-docker-compose exec node2 vppctl ping fd12::10
+docker compose exec node2 vppctl ping fd12::10
 ```
 
 ## 4 Using Ansible playbooks to automate configuration
@@ -316,14 +316,14 @@ You can inspect e.g. the playbook *playbook-1-interfaces.yaml* for the [honeycom
 
 To try it out you can run the first playbook manually:
 ```
-docker-compose run ansible playbook-1-interfaces.yaml
+docker compose run ansible playbook-1-interfaces.yaml
 ```
 
 This will perform the configuration either via NETCONF to the indvidual honeycomb agents or via the etcd HTTP API to be read by the ligato agents.
 
 Afterwards you can use the mechanisms discussed in previous sections to see the configuration changes in effect, e.g.
 ```
-docker-compose exec node3 vppctl ping fd23::20
+docker compose exec node3 vppctl ping fd23::20
 ```
 
 To bring up the full topology including the SRv6 example there are 4 playbooks per lab to perform the individual configuration steps. You can read about the SRv6 configuration steps and meaning in the following section.
@@ -341,31 +341,31 @@ In our lab topology we will cover two different types of behaviors: *END* and *E
 
 Let's start off with a fresh configuration (use any of the two labs):
 ```
-docker-compose down
-docker-compose up -d node1 node2 node3
+docker compose down
+docker compose up -d node1 node2 node3
 
 # Setup basic IP connectivity
-docker-compose run ansible playbook-1-interfaces.yaml
+docker compose run ansible playbook-1-interfaces.yaml
 ```
 
 If you are interested, you can list supported SRv6 behaviors in VPP and their meaning.
 ```
-docker-compose exec node1 vppctl show sr localsids behaviors
+docker compose exec node1 vppctl show sr localsids behaviors
 ```
 
 We need to configure the Ubuntu running on node1 and node3 to use the address (fd10::1 and fd30::1) on their interfaces toward VPP and use their respective VPP instance to route traffic to the other Ubuntu. Finally we can use ping to verify end-to-end connectivity.
 ```
 # Node 1: Replace IP address
-docker-compose exec node1 ip addr replace fd10::1/64 dev vpp
+docker compose exec node1 ip addr replace fd10::1/64 dev vpp
 
 # Node 1: Set route
-docker-compose exec node1 ip route add fd30::/64 via fd10::10
+docker compose exec node1 ip route add fd30::/64 via fd10::10
 
 # Node 3: Replace IP address
-docker-compose exec node3 ip addr replace fd30::1/64 dev vpp
+docker compose exec node3 ip addr replace fd30::1/64 dev vpp
 
 # Node 3: Set route
-docker-compose exec node3 ip route add fd10::/64 via fd30::30
+docker compose exec node3 ip route add fd10::/64 via fd30::30
 ```
 
 ### 5.1 Programming local segment IDs
@@ -379,12 +379,12 @@ For the demo topology we will define two segment IDs on each node.
 For the sake of simplicity you can use Ansible again to perform the action automatically on all three nodes. You can inspect the playbook for the [Honeycomb lab](hc2vpp/ansible/playbook-2-sid-definition.yaml) and the [Ligato lab](ligato/ansible/playbook-2-sid-definition.yaml) respectively.
 
 ```
-docker-compose run ansible playbook-2-sid-definition.yaml
+docker compose run ansible playbook-2-sid-definition.yaml
 ```
 
 You can then review the configuration on the debug CLI:
 ```
-docker-compose exec node1 vppctl show sr localsids
+docker compose exec node1 vppctl show sr localsids
 ```
 
 For reference segment IDs can also be programmed using the debug CLI. The relevant config that you applied above is roughly equivalent to (e.g. node1):
@@ -398,13 +398,13 @@ Now as indicated before segment IDs are normally routable IPv6 addresses, howeve
 
 Again you can use a predefined Ansible playbook which you can find here for the [Honeycomb lab](hc2vpp/ansible/playbook-3-sid-connectivity.yaml) and the [Ligato lab](ligato/ansible/playbook-3-sid-connectivity.yaml) respectively for review.
 ```
-docker-compose run ansible playbook-3-sid-connectivity.yaml
+docker compose run ansible playbook-3-sid-connectivity.yaml
 ```
 
 For verification you can use the debug CLI, e.g.:
 ```
-docker-compose exec node1 vppctl show ip6 fib fd22::101
-docker-compose exec node1 vppctl show ip6 neigh
+docker compose exec node1 vppctl show ip6 fib fd22::101
+docker compose exec node1 vppctl show ip6 neigh
 ```
 
 
@@ -441,26 +441,26 @@ On node3 we have matching policy and steering in the reverse direction. You can 
 
 You can run the last playbook to apply it:
 ```
-docker-compose run ansible playbook-4-srv6-policies.yaml
+docker compose run ansible playbook-4-srv6-policies.yaml
 ```
 
 To verify you can use the debug CLI, e.g.:
 ```
-docker-compose exec node1 vppctl show sr policies
-docker-compose exec node1 vppctl show sr steering
+docker compose exec node1 vppctl show sr policies
+docker compose exec node1 vppctl show sr steering
 ```
 
 Finally we can use ping to verify end-to-end connectivity.
 ```
-docker-compose exec node3 ping6 -c 1 fd10::1 >/dev/null 2>&1
-docker-compose exec node1 ping6 -c 3 fd30::1
+docker compose exec node3 ping6 -c 1 fd10::1 >/dev/null 2>&1
+docker compose exec node1 ping6 -c 3 fd30::1
 ```
 
 Finally each local SID on VPP has counters that can be used to observe the number of packets their function has been applied on.
 
 ```
-docker-compose exec node1 vppctl show sr localsids
-docker-compose exec node3 vppctl show sr localsids
+docker compose exec node1 vppctl show sr localsids
+docker compose exec node3 vppctl show sr localsids
 ```
 
 ### 5.4 Further extensions
@@ -520,7 +520,7 @@ http://node3:9482/metrics
 
 Firstly, confirm that this daemon runs on each node:
 ```bash
-docker-compose exec node1 ps -ef | grep prometheus
+docker compose exec node1 ps -ef | grep prometheus
 UID        PID  PPID  C STIME TTY          TIME CMD
 root        77     1  0 13:47 ?        00:00:00 vpp_prometheus_export /net /if /
 ```
@@ -547,7 +547,7 @@ cat telegraf/telegraf.conf
 
 ### 6.3 Check the kind of exported data on any one of the three nodes
 ```bash
-docker-compose exec node1 vppctl show runtime
+docker compose exec node1 vppctl show runtime
 Time 1679.7, average vectors/node 1.39, last 128 main loops 0.00 per node 0.00
   vector rates in 4.7228e0, out 2.8576e-2, drop 4.7169e0, punt 0.0000e0
              Name                 State         Calls          Vectors        Suspends         Clocks       Vectors/Call
@@ -557,7 +557,7 @@ ip6-icmp-input                   active                 31              33      
 ip6-icmp-neighbor-discovery-ev  any wait                 0               0            1668          1.27e4            0.00
 ip6-input                        active                 40              42               0          4.79e3            1.05
 
-docker-compose exec node1 vppctl show buffers
+docker compose exec node1 vppctl show buffers
  Thread             Name                 Index       Size        Alloc       Free       #Alloc       #Free
       0                       default           0        2048    1.69m      272.25k       768         121
       0                 lacp-ethernet           1         256      0           0           0           0
@@ -568,7 +568,7 @@ docker-compose exec node1 vppctl show buffers
       0                 lldp-ethernet           6         256      0           0           0           0
       0                       default           7        2048      0           0           0           0
 
-docker-compose exec node1 vppctl show node counters
+docker compose exec node1 vppctl show node counters
    Count                    Node                  Reason
          1                tapcli-rx               no error
          3          sr-pl-rewrite-encaps          SR steered IPv6 packets
@@ -589,12 +589,12 @@ docker-compose exec node1 vppctl show node counters
 
 Launch the Telegraf and the InfluxDB services
 ```bash
-docker-compose up -d telegraf influxdb
+docker compose up -d telegraf influxdb
 ```
 
 Launch the Chronograf service that will serve as an access point for the data and will be used in section 7 for monitoring
 ```bash
-docker-compose up -d chronograf
+docker compose up -d chronograf
 ```
 
 ### 6.5 Check status of Telemetry services in Ligato lab
@@ -646,7 +646,7 @@ This shows IP6 counters for the three nodes
 The Chronograf-based monitoring can be complemented with the Kapacitor alerting system. Enable Kapacitor with the following command:
 
 ```bash
-docker-compose up -d kapacitor
+docker compose up -d kapacitor
 ```
 
 The access point to this component has been automatically configured in Chronograf. Therefore, it is possible to define alerts in Chronograf that will run in Kapacitor.
@@ -665,7 +665,7 @@ Click _Save New TICKscript_ and _Exit_.
 Click on _Sample Rule_ under the _1 Alert Rule_. This gives an overview on the conditions under which an alert will be triggered. Specifically, the alert will be triggered when more than 2 ICMP packets will be sent to the nodes over a period of 1 minute. The alert can be triggered by, for example, pinging node 3 from node 1 several times:
 
 ```bash
-docker-compose exec node1 ping6 fd30::1 # Ping Container 3 via VPP / SRv6
+docker compose exec node1 ping6 fd30::1 # Ping Container 3 via VPP / SRv6
 ```
 
 Go back to the _Sample Dashboard_ and check the _Alerts_ panel as it reports these alerts:

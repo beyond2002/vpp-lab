@@ -34,40 +34,40 @@ Both demo topologies have a topology.sh script which performs the complete setup
 
 ### Discover the Honeycomb (hc2vpp) topology
 ```
-    Open a shell to a Ubuntu container:         docker-compose exec node1 bash
-    Open the VPP debug CLI of a node:           docker-compose exec node1 vppctl
+    Open a shell to a Ubuntu container:         docker compose exec node1 bash
+    Open the VPP debug CLI of a node:           docker compose exec node1 vppctl
     Access NETCONF API with a browser:          http://localhost:9269
                                                 NETCONF device:         node1:2831
                                                 Username & Password:    admin
     Access the telemetry data explorer:         http://localhost:8888/sources/0/chronograf/data-explorer
-    Teardown this demo:                         docker-compose down
+    Teardown this demo:                         docker compose down
 ```
 
 ### Discover the Ligato topology
 ```
-    Open a shell to a Ubuntu container:         docker-compose exec node1 bash
-    Open the VPP debug CLI of a node:           docker-compose exec node1 vppctl
-    Dump the etcd datastore:                    docker-compose exec etcd etcdctl get "" --prefix
+    Open a shell to a Ubuntu container:         docker compose exec node1 bash
+    Open the VPP debug CLI of a node:           docker compose exec node1 vppctl
+    Dump the etcd datastore:                    docker compose exec etcd etcdctl get "" --prefix
     Access ligato HTTP API with a browser:      http://localhost:9191
     Access the telemetry data explorer:         http://localhost:8888/sources/0/chronograf/data-explorer
-    Teardown this demo:                         docker-compose down
+    Teardown this demo:                         docker compose down
 ```
 
 ## FYI: Detailed VPP Demo Setup (as run by setup.sh)
 These are (roughly) the steps done by the setup.sh script to bring up this topology.
 
 ```
-docker-compose up -d                                              # Bring up topology
-docker-compose logs -f ansible                                    # Watch and wait for Ansible to complete
+docker compose up -d                                              # Bring up topology
+docker compose logs -f ansible                                    # Watch and wait for Ansible to complete
 
-docker-compose exec node1 ip addr replace fd10::1/64 dev vpp      # Set Linux-side IP if not done by VPP
-docker-compose exec node1 ip route add fd30::/64 via fd10::10     # Route to Container 3 via own VPP
+docker compose exec node1 ip addr replace fd10::1/64 dev vpp      # Set Linux-side IP if not done by VPP
+docker compose exec node1 ip route add fd30::/64 via fd10::10     # Route to Container 3 via own VPP
 
-docker-compose exec node3 ip addr replace fd30::1/64 dev vpp      # Set Linux-side IP if not done by VPP
-docker-compose exec node3 ip route add fd10::/64 via fd30::30     # Route to Container 3 via own VPP
+docker compose exec node3 ip addr replace fd30::1/64 dev vpp      # Set Linux-side IP if not done by VPP
+docker compose exec node3 ip route add fd10::/64 via fd30::30     # Route to Container 3 via own VPP
 
-docker-compose exec node3 ping6 fd10::1                           # Ping Container 1 via VPP / SRv6
-docker-compose exec node1 ping6 fd30::1                           # Ping Container 3 via VPP / SRv6
+docker compose exec node3 ping6 fd10::1                           # Ping Container 1 via VPP / SRv6
+docker compose exec node1 ping6 fd30::1                           # Ping Container 3 via VPP / SRv6
 ```
 
 ## FYI: Equivalent VPP Debug CLI Config

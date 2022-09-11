@@ -39,7 +39,7 @@ services:
     build: telegraf
 
   influxdb:
-    image: influxdb:alpine
+    image: influxdb:1.8.10-alpine
     environment:
       - INFLUXDB_DB=telemetry
       - INFLUXDB_ADMIN_PASSWORD=admin
